@@ -17,7 +17,9 @@ SHELL := /bin/bash
 # go run app/wallet/cli/main.go generate
 #
 # Sample calls
-# curl -il -X GET http://localhost:8080/v1/sample
+# curl -il -X GET http://localhost:8080/v1/genesis/list
+# curl -il -X GET http://localhost:8080/v1/accounts/list
+# curl -il -X GET http://localhost:8080/v1/accounts/list/0xF01813E4B85e178A83e29B8E7bF26BD830a25f32
 # curl -il -X GET http://localhost:9080/v1/node/sample
 #
 
