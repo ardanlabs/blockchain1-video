@@ -27,12 +27,12 @@ func run() error {
 	}
 
 	hash := signature.Hash(v)
-	fmt.Println(hash)
+	fmt.Println("SUM 1", hash)
 
 	v.Value = 11
 
 	hash = signature.Hash(v)
-	fmt.Println(hash)
+	fmt.Println("SUM 2", hash)
 
 	return nil
 }
