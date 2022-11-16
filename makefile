@@ -21,6 +21,9 @@ SHELL := /bin/bash
 # curl -il -X GET http://localhost:9080/v1/node/sample
 #
 
+scratch:
+	go run app/scratch/sig/main.go
+
 # ==============================================================================
 # Local support
 
