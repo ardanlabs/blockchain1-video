@@ -70,6 +70,23 @@ func Sign(value any, privateKey *ecdsa.PrivateKey) (v, r, s *big.Int, err error)
 	return v, r, s, nil
 }
 
+// VerifySignature verifies the signature conforms to our standards.
+func VerifySignature(v, r, s *big.Int) error {
+
+	// Check the recovery id is either 0 or 1.
+	uintV := v.Uint64() - ardanID
+	if uintV != 0 && uintV != 1 {
+		return errors.New("invalid recovery id")
+	}
+
+	// Check the signature values are valid.
+	if !crypto.ValidateSignatureValues(byte(uintV), r, s, false) {
+		return errors.New("invalid signature values")
+	}
+
+	return nil
+}
+
 // FromAddress extracts the address for the account that signed the data.
 func FromAddress(value any, v, r, s *big.Int) (string, error) {
 
