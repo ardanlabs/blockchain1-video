@@ -3,9 +3,12 @@
 package signature
 
 import (
+	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -13,6 +16,13 @@ import (
 
 // ZeroHash represents a hash code of zeros.
 const ZeroHash string = "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+// ardanID is an arbitrary number for signing messages. This will make it
+// clear that the signature comes from the Ardan blockchain.
+// Ethereum and Bitcoin do this as well, but they use the value of 27.
+const ardanID = 29
+
+// =============================================================================
 
 // Hash returns a unique string for the value.
 func Hash(value any) string {
@@ -23,6 +33,41 @@ func Hash(value any) string {
 
 	hash := sha256.Sum256(data)
 	return hexutil.Encode(hash[:])
+}
+
+// Sign uses the specified private key to sign the data.
+func Sign(value any, privateKey *ecdsa.PrivateKey) (v, r, s *big.Int, err error) {
+
+	// Prepare the data for signing.
+	data, err := stamp(value)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Sign the hash with the private key to produce a signature.
+	sig, err := crypto.Sign(data, privateKey)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Extract the bytes for the original public key.
+	publicKeyOrg := privateKey.Public()
+	publicKeyECDSA, ok := publicKeyOrg.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, nil, nil, errors.New("error casting public key to ECDSA")
+	}
+	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
+
+	// Check the public key validates the data and signature.
+	rs := sig[:crypto.RecoveryIDOffset]
+	if !crypto.VerifySignature(publicKeyBytes, data, rs) {
+		return nil, nil, nil, errors.New("invalid signature produced")
+	}
+
+	// Convert the 65 byte signature into the [R|S|V] format.
+	v, r, s = toSignatureValues(sig)
+
+	return v, r, s, nil
 }
 
 // =============================================================================
@@ -46,4 +91,13 @@ func stamp(value any) ([]byte, error) {
 	data := crypto.Keccak256(stamp, v)
 
 	return data, nil
+}
+
+// toSignatureValues converts the signature into the r, s, v values.
+func toSignatureValues(sig []byte) (v, r, s *big.Int) {
+	r = big.NewInt(0).SetBytes(sig[:32])
+	s = big.NewInt(0).SetBytes(sig[32:64])
+	v = big.NewInt(0).SetBytes([]byte{sig[64] + ardanID})
+
+	return v, r, s
 }
