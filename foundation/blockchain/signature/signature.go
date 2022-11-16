@@ -70,6 +70,46 @@ func Sign(value any, privateKey *ecdsa.PrivateKey) (v, r, s *big.Int, err error)
 	return v, r, s, nil
 }
 
+// FromAddress extracts the address for the account that signed the data.
+func FromAddress(value any, v, r, s *big.Int) (string, error) {
+
+	// Prepare the data for public key extraction.
+	data, err := stamp(value)
+	if err != nil {
+		return "", err
+	}
+
+	// Convert the [R|S|V] format into the original 65 bytes.
+	sig := ToSignatureBytes(v, r, s)
+
+	// Capture the public key associated with this data and signature.
+	publicKey, err := crypto.SigToPub(data, sig)
+	if err != nil {
+		return "", err
+	}
+
+	// Extract the account address from the public key.
+	return crypto.PubkeyToAddress(*publicKey).String(), nil
+}
+
+// ToSignatureBytes converts the r, s, v values into a slice of bytes
+// with the removal of the ardanID.
+func ToSignatureBytes(v, r, s *big.Int) []byte {
+	sig := make([]byte, crypto.SignatureLength)
+
+	rBytes := make([]byte, 32)
+	r.FillBytes(rBytes)
+	copy(sig, rBytes)
+
+	sBytes := make([]byte, 32)
+	s.FillBytes(sBytes)
+	copy(sig[32:], sBytes)
+
+	sig[64] = byte(v.Uint64() - ardanID)
+
+	return sig
+}
+
 // =============================================================================
 
 // stamp returns a hash of 32 bytes that represents this data with

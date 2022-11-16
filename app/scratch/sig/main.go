@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/ardanlabs/blockchain/foundation/blockchain/signature"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -32,7 +33,7 @@ func run() error {
 	}
 
 	value := tx{
-		From:  "Bill",
+		From:  "0xdd6B972ffcc631a62CAE1BB9d80b7ff429c8ebA4",
 		To:    "John",
 		Value: 10,
 	}
@@ -42,9 +43,24 @@ func run() error {
 		return err
 	}
 
-	fmt.Println("V", v)
-	fmt.Println("R", r)
-	fmt.Println("S", s)
+	fmt.Println("V", hexutil.Encode(v.Bytes()))
+	fmt.Println("R", hexutil.Encode(r.Bytes()))
+	fmt.Println("S", hexutil.Encode(s.Bytes()))
+
+	// =========================================================================
+
+	calcAddr, err := signature.FromAddress(value, v, r, s)
+	if err != nil {
+		return err
+	}
+
+	addr := crypto.PubkeyToAddress(pk.PublicKey).String()
+	fmt.Println("ADDR PK :", addr)
+	fmt.Println("ADDR SIG:", calcAddr)
+
+	if addr != calcAddr {
+		return fmt.Errorf("NO MATCH  got %s  exp %s", addr, calcAddr)
+	}
 
 	return nil
 }
